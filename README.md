@@ -616,14 +616,127 @@ Laravel comes equipped with tools for asset management, even though our applicat
 Nodejs comes with their NPM, the node package manager for JavaScript.
 It is what the composer is to php.All frontend libraries will be fetched, managed and versioned using NPM.
 
-`Webpack` is a `JavaScript module bundler` by definition. It makes it easy to use JavaScript modules, Bundles and Minify, JavaScript and CSS code and use CSS preprocessors like `less`,  `Sass` , `stylus` or `postCss` says it allows you to use their most recent versions of JavaScript and compiles the
-code the way it will work also on older browsers while being a great tool. It's a tool you have to learn how to use and it is not trivial.  That's why Laravel mix exists. It makes using webpack features dead simple. Let's have an overview of what features the combination of these tools give you, as mentioned, preprocessing css possibility to use modern JavaScript without worrying about the browser support, `Extracting vendor libraries`: all third party libraries code can go to one file and your application code into another file, improving your site caching abilities, 
+`Webpack` is a `JavaScript module bundler` by definition. It makes it easy to use JavaScript modules, Bundles and Minify, JavaScript and CSS code and use CSS preprocessors like `less`, `Sass` , `stylus` or `postCss` says it allows you to use their most recent versions of JavaScript and compiles the
+code the way it will work also on older browsers while being a great tool. It's a tool you have to learn how to use and it is not trivial. That's why Laravel mix exists. It makes using webpack features dead simple. Let's have an overview of what features the combination of these tools give you, as mentioned, preprocessing css possibility to use modern JavaScript without worrying about the browser support, `Extracting vendor libraries`: all third party libraries code can go to one file and your application code into another file, improving your site caching abilities,
 `Hot module replacement` : It means superfast recompletion time, this feature can recompile and replace any parts of your application front and code that has changed during the development.
 `Automatic versioning`: improves browser caching of your assets.After every compilation your assets gets a unique, hash, appended to filenames.
 `Using vue single file components` is supported out of the box.
 No configuration is needed.
 You can use `JavaScript module system`, which is something like namespace in php and finally, and maybe most importantly, your assets get minified out of the box. No configuration is needed on your side.
 
-
-
 # Installing Bootstrap in Laravel
+
+Laravel has tools to install basic scaffolding for different UI tools, CSS frameworks like bootstrap or JavaScript frameworks, namely vue or react.
+We will install the `Laravel UI` package that will do two things for us.
+
+1. It will set up the bootstrap framework.
+2. and will also provide the authentication controller.So we would have the registration and sign in logic out of the box.
+
+`Since the course is Laravel 8 based, we need to install a lot of UI version 3. `
+
+run
+
+```bash
+composer require laravel/ui
+```
+
+Now you can run by artisan UI bootstrap to configure bootstrap.
+
+```bash
+php artisan ui bootstrap
+
+```
+
+run
+
+```bash
+php artisan ui:controllers
+```
+
+#### Using NPM and compiling assets
+
+```
+npm install
+```
+
+```
+npm run dev
+```
+
+now to include the style and js add these line in the
+`app.blade.php` template file
+
+```html
+<link rel="stylesheet" href="{{ asset('css/app.css') }}" />
+<script src="{{ asset('js/app.js') }}" defer></script>
+```
+
+and the css and js will be loaded
+
+###### versioning with laravel mix
+
+So, you know, you can use the `asset()` helper to include assets, sometimes people add suffixes to the asset file names after changing them to make sure browsers will fetch the updated assets instead of
+serving the cached ones. Laravel Mix does that for you automatically, but you need to make some changes in the mix config file first.
+
+So open the `webpack.mix.js`
+
+The mix variable contains the Laravel mix object, one of its methods called version will make sure
+your assets get a unique hash appended to the actual filenames every time you make changes to those files after they are re-compiled. It's good to know this feature is only really usable in production, so we can conditionally enable it.
+
+By first checking if we are in production mode
+
+```javascript
+if (mix.inProduction()) {
+    mix.version();
+}
+```
+
+The final step is to replace the Asset helper with the mix helper in the blade template. It's the mix helper functions job to figure out the proper filename with the suffix.
+
+```html
+<link rel="stylesheet" href="{{ mix('css/app.css') }}" />
+<script src="{{ mix('js/app.js') }}" defer></script>
+```
+
+Since the versioning will only work in production to compile production assets, we need to run
+`npm run prod`
+
+Notice how the output files are significantly smaller in size than when compiling for the development environment.Then let's switch to the browser and make sure you refresh the page. Then take a look at the network tab and the file names now have an ID parameter added that makes the names unique after they are changed.So in summary, if you do use versioning, you need to remember to use the mix Helper to include your
+assets.If you don't want this feature, stick to the asset function.
+<mark>I would recommend using the versioning feature.
+</mark>
+
+
+
+# Testing Basics
+So far, each time we learn the new concept of Laravel and then implemented that inside our example
+Laravel blog application, we verified if everything works by simply clicking through the application inside the browser.
+So this approach seems to be very simple, and you might think that it saves you some time by not writing tests
+But of course it's not true because it is first time consuming. And then when your application grows, it's almost impossible to verify that every feature of your application still works as expected. And of course, you often make changes to the application and then verifying that everything still works is also pretty impossible.So you might think that you do not need to write tests for your apps because they are simple and you know what you are doing. But you will be proven wrong sooner or later to make sure that products that we are creating always work as expected, we should write automated tests and tests can be divided into two simple categories.
+
+The first would be the `unit tests` and unit tests are for testing small, isolated parts of your code,
+
+like one class or one method functionality.
+
+And then we have `feature tests` which, as the name suggests, are for testing the specific features of your application.
+For example, it might be testing if the blog post was actually saved when we sent our correct data. And then if we see the flash message that the blog post was created. So it might often involve making HTTP requests to your running application.how tests are organized inside a lot of application. So by default, we have this `tests folder` which lives inside the root directory of your Laravel application.
+And it contains two directories, `the feature`, which contains all your feature tests and `unit`, which will store all the unit tests also inside the tests directory.
+
+There is a `TestCase` file which contains a test base class from which all your tests should extend. So now we know where we should store our tests and now just let's take a look at two example tests that Laravel provides.
+
+So first, let's take a look at the unit test.
+
+You can see that it extends the base TestCase class and that it contains one method
+So this is an important thing to remember that your test would be a class that would extend the TestCase and then it will contain some methods.And <mark>all the methods that are actual tests should start with the name test.</mark>
+So let's take a look at another example, that feature test, let's open the example test and you can see that it also extends the same class, but it is a little bit different. The name of the one test that is inside this class also starts with a test. And this is actually a feature test and it's opening a page. In this case, it's the main page and then it checks whether the return status was 200. So that basically means if the page could be open and it is returning any result so you can run those tests inside the command line, whether it is powershell or terminal inside your mark by running
+
+this command 
+
+```cmd
+.\vendor\bin\phpunit
+
+```
+
+So after running this command, you can see that two tests were run and they contain two assertions and everything is green, which means that all of our tests are passing.
+
+
