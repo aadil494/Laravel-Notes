@@ -706,9 +706,8 @@ assets.If you don't want this feature, stick to the asset function.
 <mark>I would recommend using the versioning feature.
 </mark>
 
-
-
 # Testing Basics
+
 So far, each time we learn the new concept of Laravel and then implemented that inside our example
 Laravel blog application, we verified if everything works by simply clicking through the application inside the browser.
 So this approach seems to be very simple, and you might think that it saves you some time by not writing tests
@@ -730,7 +729,7 @@ You can see that it extends the base TestCase class and that it contains one met
 So this is an important thing to remember that your test would be a class that would extend the TestCase and then it will contain some methods.And <mark>all the methods that are actual tests should start with the name test.</mark>
 So let's take a look at another example, that feature test, let's open the example test and you can see that it also extends the same class, but it is a little bit different. The name of the one test that is inside this class also starts with a test. And this is actually a feature test and it's opening a page. In this case, it's the main page and then it checks whether the return status was 200. So that basically means if the page could be open and it is returning any result so you can run those tests inside the command line, whether it is powershell or terminal inside your mark by running
 
-this command 
+this command
 
 ```cmd
 .\vendor\bin\phpunit
@@ -739,4 +738,151 @@ this command
 
 So after running this command, you can see that two tests were run and they contain two assertions and everything is green, which means that all of our tests are passing.
 
+# One To One relations with migrations
 
+So far, we only have created one simple blog post model, but as we will create more sometimes we will also need to relate them somehow to each other. So, for example, a blog post can have comments or it can have images or the Author can have his profile where, for example, he might keep his settings.Now, the one to one relation that we will talk about in this lecture is one of the simplest relations. And as you can see on this diagram, the one author can only have one profile, not more author, cannot have two profiles or more. And the same is with profiles.
+
+Now, let's take a look at how is the database design going to look like? So we have these two models out Author and profile.
+
+But you might notice that on the profile we have the `author_id`.
+So this is where our relation would be kept.
+And there are reasons for this why we put that author_id on profile and not the profile_d on the author. It's because the profile cannot really exist on itself. So in the sense of this relations, when you have an author only, then the author can have a profile and a profile with some settings and preferences without an author makes no sense. Now, this is how you define relations in Laravel will implement that in a bit.
+So we'll be adding functions to our model and they can be named however you like. Just you need to use this specific methods from the base model class to tell Laravel how the relation
+
+now lets code
+
+make
+two models with migrations
+
+1. Author
+2. Profile
+
+```bash
+php artisan make:model Author --migration
+php artisan make:model Profile --migrations
+
+```
+
+The above two commands will create two models and two migrations
+
+now we need to first define the relations in the models
+
+```php
+// Add this function to Authors Model
+
+public function profile(){
+    return $this->hasOne('App/Profile');
+}
+
+```
+
+Add this function to Profile Model
+
+```php
+
+public function author(){
+    return $this->belongsTo('App\Author');
+}
+```
+
+so now we have defined the Models , we need to modify the migrations
+
+we wont change the authors migrations much, But we will add a foreign key in the profile migration
+
+```php
+    public function up()
+    {
+        Schema::create('profiles', function (Blueprint $table) {
+            $table->increments('id');
+            $table->timestamps();
+
+
+            $table->unsignedInteger('author_id')->unique();
+            $table->foreign('author_id')->references('id')->on('authors');
+        });
+    }
+
+```
+
+Now that we have our profile and our models created and migration's run, let's open the terminal, and play around in tinker
+
+```bash
+
+$author = new Author()
+$author->save()
+
+$profile = new Profile()
+
+$author->profile()
+
+$author->profile()->save($profile)
+
+
+```
+
+now lets do the reverse
+
+```bash
+
+$profile = new Profile()
+
+$author = Author::create()
+
+$profile->author()->associate($author)
+
+```
+
+##### Querying 1 to 1 Relationships
+
+Lazy Loading -> where relationship data is not loaded at first
+
+```bash
+
+$author = Author::find(1)
+$author->profile
+
+or
+
+$profile = Profile::find(2)
+$profile->author
+
+```
+
+getting everything together
+
+```bash
+
+$author = Author::with('profile')->whereKey(1)->first()
+
+```
+# 1 to MANY RELATIONS
+
+This lecture would be a short introduction to the one to many relationship, a very common kind of relationshipthat you will probably most often use.
+
+Example
+`1 BlogPost ->  many comments`
+
+lets make the Comment model with migration
+
+```bash
+
+php artisan make:model Comment --migration
+```
+
+make the comments migration with foreign key
+
+```php
+
+    public function up()
+    {
+        Schema::create('comments', function (Blueprint $table) {
+            $table->increments('id');
+            $table->timestamps();
+
+            $table->text('content');
+            $table->unsignedBigInteger('blog_post_id')->index();
+            $table->foreign('blog_post_id')->references('id')->on('blog_posts');
+        });
+    }
+
+```
