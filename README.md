@@ -855,12 +855,13 @@ getting everything together
 $author = Author::with('profile')->whereKey(1)->first()
 
 ```
+
 # 1 to MANY RELATIONS
 
 This lecture would be a short introduction to the one to many relationship, a very common kind of relationshipthat you will probably most often use.
 
 Example
-`1 BlogPost ->  many comments`
+`1 BlogPost -> many comments`
 
 lets make the Comment model with migration
 
@@ -886,3 +887,193 @@ make the comments migration with foreign key
     }
 
 ```
+
+now the migrations are done lets define the relations in the models classes
+
+Add this to the BlogPost Model
+
+```php
+
+public function comments(){
+        return $this->hasMany('App\Models\Comment');
+        // return $this->hasMany('App\Models\Comment','post_id','blog_post_id');
+        // foreign key
+}
+
+```
+
+Add this function to the comments model
+
+```php
+
+public function blogPost(){
+        return $this->belongsTo('App\Models\BlogPost');
+    }
+
+```
+
+##### One to Many asigning relations
+
+open tinker
+
+```bash
+
+$comment = new Comment()
+$comment->content = "This is a comment"
+
+$bp = BlogPost::find(2)
+
+$bp->comments->save($comment)
+
+or
+
+
+$bp = BlogPost::find(2)
+
+$comment->content = "This is a second comment "
+$comment->blogPost()->associate($bp)->save()
+
+also
+
+$comment1->content = "This is a First comment "
+$comment2->content = "This is a Second comment "
+$comment3->content = "This is a Third comment "
+
+$bp->comments()->saveMany([$comment1,$comment2,$comment3])
+
+```
+
+# Querying Basics
+
+#### Lazy Loading
+
+```php
+// In this case 1 query is un for getting 1 comment
+DB::connection()->enableQueryLog();
+        $posts = BlogPost::all();
+
+        foreach($posts as $post){
+            foreach($post->comments as $comment){
+                echo $comment->content;
+            }
+        }
+
+        dd(DB::getQueryLog());
+
+
+```
+
+we need to use
+`use Illuminate\Support\Facades\DB;`
+in order to use DB class
+
+```php
+    // In this case all the comments are fetched with one query
+        DB::connection()->enableQueryLog(); // Enables query logging
+        $posts = BlogPost::with('comments')->get();
+
+        foreach($posts as $post){
+            foreach($post->comments as $comment){
+                echo $comment->content;
+            }
+        }
+
+        dd(DB::getQueryLog()); // dumbs the query logs
+
+
+```
+
+### Querying Relationship existance
+
+So basically, we'll try to fetch only the blog posts that happen to have some comments.
+
+1. to get all the posts that have comments
+
+```bash
+
+BlogPost::has('comments')->get()
+
+
+```
+
+2. to get blog post with 2 or more comments
+
+```bash
+
+BlogPost::has('comments', '>=' , 2)->get()
+
+```
+
+3. to get blog posts with "abc" text in it
+
+```bash
+BlogPost::whereHas('comments', function($query){
+    $query->where('content','like','%abc%');
+})->get();
+```
+
+### Query Relationship Absence
+
+In the last section we have queried the relationship existence now will do the opposite, we will
+query the relationship absence.
+
+1. Get all the comments from a blogpost with no comments
+
+```bash
+
+BlogPost::doesnthave('comments')->get()
+
+```
+
+2. Get all posts where we dont have 'abc' in comment
+
+```bash
+BlogPost::whereDoesntHave('comments',function($query){$query->where('content','like','%abc%'); })->get()
+```
+
+#### Counting Related Models
+
+Get the blog posts with the comments_count field (total comments)
+
+```bash
+$posts = BlogPost::withCount('comments')->get();
+```
+
+# Model Factory
+
+```bash
+php artisan make:factory CommentFactory --model=Comment
+```
+
+then go to the CommentFactory class and add the following code'
+
+```php
+protected $model = Comment::class; // dont forget to add use statement
+    public function definition()
+    {
+        return [
+            'content' => $this->faker->sentence()
+        ];
+    }
+
+```
+now we can use commentFactory to 
+generate some random comments 
+to test this out lets use tinker
+
+```bash
+
+    Comment::factory(10)->create(['blog_post_id' => 1]);
+
+```
+The above tinker command will add 10 random comments to 
+BlogPost with id=1
+
+
+
+
+
+
+
+
+
